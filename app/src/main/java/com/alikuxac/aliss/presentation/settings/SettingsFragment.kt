@@ -1,4 +1,4 @@
-package com.alikuxac.aliss.ui.settings
+package com.alikuxac.aliss.presentation.settings
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.alikuxac.aliss.data.repository.ConfigRepositoryImpl
+import com.alikuxac.aliss.domain.usecase.GetConfigUseCase
+import com.alikuxac.aliss.domain.usecase.SaveConfigUseCase
 import com.alikuxac.aliss.databinding.FragmentSettingsBinding
 
 class SettingsFragment : Fragment() {
@@ -20,9 +22,10 @@ class SettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Dynamic construction or factory implementation matching standard architectural design
         val repository = ConfigRepositoryImpl(requireContext().applicationContext)
-        val factory = SettingsViewModelFactory(repository)
+        val getConfigUseCase = GetConfigUseCase(repository)
+        val saveConfigUseCase = SaveConfigUseCase(repository)
+        val factory = SettingsViewModelFactory(getConfigUseCase, saveConfigUseCase)
         val settingsViewModel = ViewModelProvider(this, factory).get(SettingsViewModel::class.java)
 
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
