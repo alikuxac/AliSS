@@ -1,50 +1,52 @@
-name: Build APK on Tag/Release
+name: Android Release Build
 
 on:
-  release:
-    types: [published]
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'
 
 jobs:
   build:
+    name: Build Release APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Cache Gradle Wrapper
-        path: ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('./gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Decode Keystore
+        id: decode_keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+          echo "keystore_path=$(pwd)/release.keystore" >> $GITHUB_ENV
 
-      - name: Cache Gradle dependencies
-        path: ~/.gradle/caches
-        key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle*') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-caches-
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-
-      - name: Build APK
+      - name: Build Release APK
         run: ./gradlew assembleRelease
+        env:
+          RELEASE_STORE_FILE: ${{ env.keystore_path }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: AliSS-release-apk
+          path: app/build/outputs/apk/release/*.apk
 
-      - name: Create Release
-        if: github.event_name == 'release'
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

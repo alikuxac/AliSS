@@ -4,21 +4,34 @@ plugins {
 
 android {
     namespace = "com.alikuxac.aliss"
-    compileSdk = 36
+    compileSdk = project.findProperty("sdk.compile").toString().toInt()
 
     defaultConfig {
         applicationId = "com.alikuxac.aliss"
-        minSdk = 33
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = project.findProperty("sdk.min").toString().toInt()
+        targetSdk = project.findProperty("sdk.target").toString().toInt()
+        versionCode = project.findProperty("app.versionCode").toString().toInt()
+        versionName = project.findProperty("app.versionName").toString()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("RELEASE_STORE_FILE")
+            if (!keystorePath.isNullOrEmpty()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -31,9 +44,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    // Note: With built-in Kotlin in AGP 9.0+, kotlin.compilerOptions.jvmTarget 
-    // defaults to android.compileOptions.targetCompatibility (Java 11 here).
-    
     buildFeatures {
         viewBinding = true
     }
